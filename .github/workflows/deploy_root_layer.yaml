@@ -1,0 +1,38 @@
+name: deploy root layer
+run-name: deploy root layer - ${{ github.event.inputs.terraform_action }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      terraform_action:
+        default: apply
+        description: terraform action
+        options:
+          - plan
+          - plan destroy
+          - apply
+          - destroy
+        required: true
+        type: choice
+      auth:
+        default: oidc
+        description: authentication method
+        options:
+          - keys
+          - oidc
+        required: false
+        type: choice
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy-root-layer:
+    uses: ./.github/workflows/reusable_deploy.yaml
+    with:
+      auth: ${{ github.event.inputs.auth }}
+      aws_region: us-east-2
+      terraform_action: ${{ github.event.inputs.terraform_action }}
+      terraform_layer: root_layer
+    secrets: inherit
