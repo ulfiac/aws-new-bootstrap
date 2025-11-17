@@ -1,0 +1,174 @@
+name: reusable tf action
+run-name: tf action on ${{ inputs.terraform_layer }} - ${{ inputs.terraform_action }}
+
+on: 
+  workflow_call:
+    inputs:
+      auth:
+        default: oidc
+        required: false
+        type: string
+      aws_region:
+        default: us-east-2
+        required: false
+        type: string
+      terraform_action:
+        required: true
+        type: string
+      terraform_layer:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      auth:
+        default: oidc
+        description: authentication method
+        options:
+          - keys
+          - oidc
+        required: false
+        type: choice
+      aws_region:
+        default: us-east-2
+        description: aws region
+        required: false
+        type: choice
+        options:
+          - us-east-2
+          - us-west-2
+      terraform_action:
+        default: plan
+        description: terraform action
+        options:
+          - plan
+          - plan destroy
+          - apply
+          - destroy
+        required: true
+        type: choice
+      terraform_layer:
+        default: account_layer
+        description: terraform layer
+        options:
+          - account_layer
+          - earn_credits_layer
+          - root_layer
+        required: true
+        type: choice
+
+env:
+  TF_LOG: OFF
+  TF_LOG_CORE: OFF
+  TF_LOG_PROVIDER: OFF
+  TF_LOG_PATH: ./terraform.log
+  TF_VAR_aws_region: ${{ inputs.aws_region }}
+  TF_VAR_oidc_role_to_assume: ${{ vars.OIDC_ROLE_TO_ASSUME }}
+  TF_VAR_oidc_provider_hostname: ${{ vars.OIDC_PROVIDER_HOSTNAME }}
+  TF_VAR_tf_state_s3_bucket_name: ${{ vars.TF_STATE_S3_BUCKET_NAME }}
+  TF_VAR_unique_name: ${{ secrets.UNIQUE_NAME }}
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  terraform_action:
+    name: "${{ inputs.terraform_action }} on ${{ inputs.terraform_layer }} in ${{ inputs.aws_region }}"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./terraform/${{ inputs.terraform_layer }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - run: pwd
+
+      - run: shasum --version
+      - run: gpg --version
+
+      - name: add gpg public key
+        if: ${{ inputs.terraform_layer == 'account_layer' }}
+        env:
+          GPG_PUBLIC_KEY_BINARY_BASE64: ${{ vars.GPG_PUBLIC_KEY_BINARY_BASE64 }}
+        run: ../../scripts/add_gpg_public_key.sh
+
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_wrapper: false
+      - run: terraform --version
+
+      - run: aws --version
+
+      - name: configure aws credentials with oidc
+        if: ${{ inputs.auth == 'oidc' }}
+        uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ vars.OIDC_ROLE_TO_ASSUME }}
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: configure aws credentials with keys
+        if: ${{ inputs.auth == 'keys' }}
+        uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: dump context
+        env:
+          CONTEXT_ENV: ${{ toJson(env) }}
+          CONTEXT_GITHUB: ${{ toJson(github) }}
+          CONTEXT_INPUTS: ${{ toJson(inputs) }}
+          CONTEXT_JOB: ${{ toJson(job) }}
+          CONTEXT_MATRIX: ${{ toJson(matrix) }}
+          CONTEXT_NEEDS: ${{ toJson(needs) }}
+          CONTEXT_RUNNER: ${{ toJson(runner) }}
+          CONTEXT_SECRETS: ${{ toJson(secrets) }}
+          CONTEXT_STEPS: ${{ toJson(steps) }}
+          CONTEXT_STRATEGY: ${{ toJson(strategy) }}
+          CONTEXT_VARS: ${{ toJson(vars) }}
+        run: ../../scripts/dump_context.sh
+
+      - run: terraform init
+      - run: terraform validate
+
+      - name: import root layer
+        if: ${{ inputs.terraform_layer == 'root_layer' }}
+        env:
+          OIDC_PROVIDER_HOSTNAME: ${{ vars.OIDC_PROVIDER_HOSTNAME }}
+          OIDC_ROLE_TO_ASSUME: ${{ vars.OIDC_ROLE_TO_ASSUME }}
+          TF_STATE_S3_BUCKET_NAME: ${{ vars.TF_STATE_S3_BUCKET_NAME }}
+        run: ../../scripts/import_root_layer.sh
+
+      - name: terraform plan
+        if: ${{ inputs.terraform_action == 'plan' }}
+        run: |
+          terraform plan -out=./tfplan.binary
+          echo -e "\n::notice::Plan details.\n"
+
+      - name: terraform plan destroy
+        if: ${{ inputs.terraform_action == 'plan destroy' }}
+        run: |
+          terraform plan -destroy -out=./tfplan.binary
+          echo -e "\n::notice::Plan destroy details.\n"
+
+      - name: show plan summary
+        if : ${{ inputs.terraform_action == 'plan' || inputs.terraform_action == 'plan destroy' }}
+        run: ../../scripts/show_plan_summary.sh
+
+      - name: terraform apply
+        if: ${{ inputs.terraform_action == 'apply' }}
+        run: |
+          set -o pipefail
+          terraform apply -auto-approve | tee tfapply.out
+          echo -e "\n::notice::Apply details.\n"
+
+      - name: terraform destroy
+        if: ${{ inputs.terraform_action == 'destroy' }}
+        run: |
+          set -o pipefail
+          terraform apply -destroy -auto-approve | tee tfdestroy.out
+          echo -e "\n::notice::Destroy details.\n"
+
+      - name: show apply summary
+        if: ${{ inputs.terraform_action == 'apply' || inputs.terraform_action == 'destroy' }}
+        run: ../../scripts/show_apply_summary.sh "${{ inputs.terraform_action }}"

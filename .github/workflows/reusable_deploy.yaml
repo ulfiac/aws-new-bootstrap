@@ -1,0 +1,111 @@
+name: reusable deploy
+run-name: deploy on ${{ inputs.terraform_layer }} - ${{ inputs.terraform_action }}
+
+on:
+  workflow_call:
+    inputs:
+      auth:
+        default: oidc
+        required: false
+        type: string
+      aws_region:
+        default: us-east-2
+        required: false
+        type: string
+      terraform_action:
+        required: true
+        type: string
+      terraform_layer:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      auth:
+        default: oidc
+        description: authentication method
+        options:
+          - keys
+          - oidc
+        required: false
+        type: choice
+      aws_region:
+        default: us-east-2
+        description: aws region
+        required: false
+        type: choice
+        options:
+          - us-east-2
+          - us-west-2
+      terraform_action:
+        default: plan
+        description: terraform action
+        options:
+          - plan
+          - plan destroy
+          - apply
+          - destroy
+        required: true
+        type: choice
+      terraform_layer:
+        default: account_layer
+        description: terraform layer
+        options:
+          - account_layer
+          - earn_credits_layer
+          - root_layer
+        required: true
+        type: choice
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  set-plan-action:
+    name: set plan action
+    runs-on: ubuntu-latest
+    outputs:
+      plan_action: ${{ steps.set-plan-action.outputs.plan_action }}
+    steps:
+      - name: set plan action
+        id: set-plan-action
+        run: |
+          case "${{ inputs.terraform_action }}" in
+            "plan"|"apply")
+              echo "plan_action=plan" >> "$GITHUB_OUTPUT"
+              ;;
+            "plan destroy"|"destroy")
+              echo "plan_action=plan destroy" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+  plan:
+    uses: ./.github/workflows/reusable_terraform_action.yaml
+    needs: set-plan-action
+    with:
+      auth: ${{ inputs.auth }}
+      aws_region: ${{ inputs.aws_region }}
+      terraform_action: ${{ needs.set-plan-action.outputs.plan_action }}
+      terraform_layer: ${{ inputs.terraform_layer }}
+    secrets: inherit
+
+  get-approval:
+    name: get approval
+    runs-on: ubuntu-latest
+    if: ${{ inputs.terraform_action == 'apply' || inputs.terraform_action == 'destroy' }}
+    environment: approval_required
+    needs: plan
+    steps:
+      - name: Approval requested
+        run: echo 'Approval provided.  Job will continue.'
+
+  apply:
+    uses: ./.github/workflows/reusable_terraform_action.yaml
+    if: ${{ inputs.terraform_action == 'apply' || inputs.terraform_action == 'destroy' }}
+    needs: get-approval
+    with:
+      auth: ${{ inputs.auth }}
+      aws_region: ${{ inputs.aws_region }}
+      terraform_action: ${{ inputs.terraform_action }}
+      terraform_layer: ${{ inputs.terraform_layer }}
+    secrets: inherit
