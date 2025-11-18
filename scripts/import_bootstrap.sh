@@ -24,7 +24,7 @@ AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
 # if it does not, skip the import
 # grep -q will return exit code 0 if the pattern is found, otherwise it returns 1
 function import_oidc_provider() {
-  if aws iam list-open-id-connect-providers | grep -q "$OIDC_PROVIDER_HOSTNAME" > /dev/null 2>&1; then
+  if aws iam list-open-id-connect-providers | grep -q "$OIDC_PROVIDER_HOSTNAME"; then
     echo -e "\n\nOIDC provider '$OIDC_PROVIDER_HOSTNAME' exists. Importing...\n\n"
     terraform import 'aws_iam_openid_connect_provider.oidc_gha' "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/${OIDC_PROVIDER_HOSTNAME}"
   else
