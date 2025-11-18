@@ -48,7 +48,7 @@ function import_iam_role() {
 
 
 # check if bucket exists before importing
-# if it does, import the resouces
+# if it does, import the resources
 # if it does not, skip the import
 function import_s3_bucket() {
   if aws s3api head-bucket --bucket "$TF_STATE_S3_BUCKET_NAME" > /dev/null 2>&1; then
