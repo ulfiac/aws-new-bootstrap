@@ -51,6 +51,7 @@ env:
   TF_LOG_PATH: ./terraform.log
   TF_VAR_aws_region: ${{ inputs.aws_region }}
   TF_VAR_oidc_role_to_assume: ${{ vars.OIDC_ROLE_TO_ASSUME }}
+  TF_VAR_tf_state_s3_bucket_name: ${{ vars.TF_STATE_S3_BUCKET_NAME }}
 
 permissions:
   contents: read
@@ -102,17 +103,16 @@ jobs:
           CONTEXT_STEPS: ${{ toJson(steps) }}
           CONTEXT_STRATEGY: ${{ toJson(strategy) }}
           CONTEXT_VARS: ${{ toJson(vars) }}
-        run: ../../scripts/dump_context.sh
+        run: ../scripts/dump_context.sh
 
       - run: terraform init
       - run: terraform validate
 
       - name: import bootstrap
         env:
-          OIDC_PROVIDER_HOSTNAME: ${{ vars.OIDC_PROVIDER_HOSTNAME }}
           OIDC_ROLE_TO_ASSUME: ${{ vars.OIDC_ROLE_TO_ASSUME }}
           TF_STATE_S3_BUCKET_NAME: ${{ vars.TF_STATE_S3_BUCKET_NAME }}
-        run: ../../scripts/import_bootstrap.sh
+        run: ../scripts/import_bootstrap.sh
 
       - name: terraform plan
         if: ${{ inputs.terraform_action == 'plan' }}
@@ -128,7 +128,7 @@ jobs:
 
       - name: show plan summary
         if : ${{ inputs.terraform_action == 'plan' || inputs.terraform_action == 'plan destroy' }}
-        run: ../../scripts/show_plan_summary.sh
+        run: ../scripts/show_plan_summary.sh
 
       - name: terraform apply
         if: ${{ inputs.terraform_action == 'apply' }}
@@ -146,4 +146,4 @@ jobs:
 
       - name: show apply summary
         if: ${{ inputs.terraform_action == 'apply' || inputs.terraform_action == 'destroy' }}
-        run: ../../scripts/show_apply_summary.sh "${{ inputs.terraform_action }}"
+        run: ../scripts/show_apply_summary.sh "${{ inputs.terraform_action }}"
