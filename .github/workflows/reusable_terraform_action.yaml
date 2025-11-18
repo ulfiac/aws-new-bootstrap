@@ -1,5 +1,5 @@
 name: reusable tf action
-run-name: tf action on ${{ inputs.terraform_layer }} - ${{ inputs.terraform_action }}
+run-name: tf action on bootstrap - ${{ inputs.terraform_action }}
 
 on: 
   workflow_call:

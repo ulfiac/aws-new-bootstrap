@@ -28,7 +28,7 @@ permissions:
   id-token: write
 
 jobs:
-  deploy-root-layer:
+  deploy-bootstrap:
     uses: ./.github/workflows/reusable_deploy.yaml
     with:
       auth: ${{ github.event.inputs.auth }}
