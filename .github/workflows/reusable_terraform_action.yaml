@@ -51,9 +51,6 @@ env:
   TF_LOG_PATH: ./terraform.log
   TF_VAR_aws_region: ${{ inputs.aws_region }}
   TF_VAR_oidc_role_to_assume: ${{ vars.OIDC_ROLE_TO_ASSUME }}
-  TF_VAR_oidc_provider_hostname: ${{ vars.OIDC_PROVIDER_HOSTNAME }}
-  TF_VAR_tf_state_s3_bucket_name: ${{ vars.TF_STATE_S3_BUCKET_NAME }}
-  TF_VAR_unique_name: ${{ secrets.UNIQUE_NAME }}
 
 permissions:
   contents: read
