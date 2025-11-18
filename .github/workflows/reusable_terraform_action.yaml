@@ -15,9 +15,6 @@ on:
       terraform_action:
         required: true
         type: string
-      terraform_layer:
-        required: true
-        type: string
   workflow_dispatch:
     inputs:
       auth:
@@ -46,15 +43,6 @@ on:
           - destroy
         required: true
         type: choice
-      terraform_layer:
-        default: account_layer
-        description: terraform layer
-        options:
-          - account_layer
-          - earn_credits_layer
-          - root_layer
-        required: true
-        type: choice
 
 env:
   TF_LOG: OFF
@@ -73,23 +61,14 @@ permissions:
 
 jobs:
   terraform_action:
-    name: "${{ inputs.terraform_action }} on ${{ inputs.terraform_layer }} in ${{ inputs.aws_region }}"
+    name: "${{ inputs.terraform_action }} on bootstrap in ${{ inputs.aws_region }}"
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./terraform/${{ inputs.terraform_layer }}
+        working-directory: ./terraform
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - run: pwd
-
-      - run: shasum --version
-      - run: gpg --version
-
-      - name: add gpg public key
-        if: ${{ inputs.terraform_layer == 'account_layer' }}
-        env:
-          GPG_PUBLIC_KEY_BINARY_BASE64: ${{ vars.GPG_PUBLIC_KEY_BINARY_BASE64 }}
-        run: ../../scripts/add_gpg_public_key.sh
 
       - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
@@ -131,13 +110,12 @@ jobs:
       - run: terraform init
       - run: terraform validate
 
-      - name: import root layer
-        if: ${{ inputs.terraform_layer == 'root_layer' }}
+      - name: import bootstrap
         env:
           OIDC_PROVIDER_HOSTNAME: ${{ vars.OIDC_PROVIDER_HOSTNAME }}
           OIDC_ROLE_TO_ASSUME: ${{ vars.OIDC_ROLE_TO_ASSUME }}
           TF_STATE_S3_BUCKET_NAME: ${{ vars.TF_STATE_S3_BUCKET_NAME }}
-        run: ../../scripts/import_root_layer.sh
+        run: ../../scripts/import_bootstrap.sh
 
       - name: terraform plan
         if: ${{ inputs.terraform_action == 'plan' }}

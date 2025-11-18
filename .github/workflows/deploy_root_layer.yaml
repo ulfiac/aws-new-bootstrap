@@ -1,5 +1,5 @@
-name: deploy root layer
-run-name: deploy root layer - ${{ github.event.inputs.terraform_action }}
+name: deploy bootstrap
+run-name: deploy bootstrap - ${{ github.event.inputs.terraform_action }}
 
 on:
   workflow_dispatch:
@@ -34,5 +34,4 @@ jobs:
       auth: ${{ github.event.inputs.auth }}
       aws_region: us-east-2
       terraform_action: ${{ github.event.inputs.terraform_action }}
-      terraform_layer: root_layer
     secrets: inherit
