@@ -19,7 +19,7 @@ get_plan_summary() {
 }
 
 
-# extrap apply summary line
+# extract apply summary line
 get_apply_summary() {
   grep -E '(Apply complete)' || true
 }
