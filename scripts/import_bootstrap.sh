@@ -2,13 +2,15 @@
 set -euo pipefail
 
 # Required environment variables:
-#   OIDC_PROVIDER_HOSTNAME  - Hostname of the OIDC provider for GitHub Actions
 #   OIDC_ROLE_TO_ASSUME     - Name of the IAM role to assume for OIDC authentication
 #   TF_STATE_S3_BUCKET_NAME - Name of the S3 bucket for Terraform state
 
 # check versions
 aws --version
 terraform --version
+
+# OIDC provider hostname is a stable constant defined by GitHub and AWS specifications; hardcoded for security and stability reasons
+OIDC_PROVIDER_HOSTNAME='token.actions.githubusercontent.com'
 
 # get the AWS account ID
 AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"

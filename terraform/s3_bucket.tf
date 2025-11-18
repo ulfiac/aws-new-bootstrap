@@ -1,6 +1,6 @@
 #trivy:ignore:AVD-AWS-0089 (LOW): Bucket has logging disabled
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = local.tf_state_s3_bucket_name
+  bucket = var.tf_state_s3_bucket_name
 }
 
 resource "aws_s3_bucket_public_access_block" "terraform_state" {
