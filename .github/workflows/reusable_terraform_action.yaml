@@ -102,7 +102,7 @@ jobs:
           CONTEXT_STEPS: ${{ toJson(steps) }}
           CONTEXT_STRATEGY: ${{ toJson(strategy) }}
           CONTEXT_VARS: ${{ toJson(vars) }}
-        run: ../../scripts/dump_context.sh
+        run: ../scripts/dump_context.sh
 
       - run: terraform init
       - run: terraform validate
