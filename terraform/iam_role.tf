@@ -5,13 +5,13 @@ data "aws_iam_policy_document" "assume_role_policy_oidc" {
 
     condition {
       test     = "StringEquals"
-      variable = "${local.oidc_provider_hostname}:aud"
+      variable = "${var.oidc_provider_hostname}:aud"
       values   = ["sts.amazonaws.com"]
     }
 
     condition {
       test     = "StringLike"
-      variable = "${local.oidc_provider_hostname}:sub"
+      variable = "${var.oidc_provider_hostname}:sub"
       values = [
         "repo:ulfiac/aws-bootstrap:*",
         "repo:ulfiac/aws-new-bootstrap:*"
