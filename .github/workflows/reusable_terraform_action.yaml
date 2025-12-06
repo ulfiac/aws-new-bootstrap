@@ -1,5 +1,5 @@
 name: reusable tf action
-run-name: tf action on bootstrap - ${{ inputs.terraform_action }}
+run-name: tf action - ${{ inputs.terraform_action }}
 
 on: 
   workflow_call:
@@ -59,7 +59,7 @@ permissions:
 
 jobs:
   terraform_action:
-    name: "${{ inputs.terraform_action }} on bootstrap in ${{ inputs.aws_region }}"
+    name: "${{ inputs.terraform_action }} in ${{ inputs.aws_region }}"
     runs-on: ubuntu-latest
     defaults:
       run:
