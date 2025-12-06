@@ -1,10 +1,10 @@
 #trivy:ignore:AVD-AWS-0089 (LOW): Bucket has logging disabled
-resource "aws_s3_bucket" "terraform_state" {
-  bucket = var.tf_state_s3_bucket_name
+resource "aws_s3_bucket" "terraform_state_bucket" {
+  bucket = local.terraform_state_bucket_name
 }
 
-resource "aws_s3_bucket_public_access_block" "terraform_state" {
-  bucket = aws_s3_bucket.terraform_state.id
+resource "aws_s3_bucket_public_access_block" "terraform_state_bucket" {
+  bucket = aws_s3_bucket.terraform_state_bucket.id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -12,16 +12,16 @@ resource "aws_s3_bucket_public_access_block" "terraform_state" {
   restrict_public_buckets = true
 }
 
-resource "aws_s3_bucket_versioning" "terraform_state" {
-  bucket = aws_s3_bucket.terraform_state.id
+resource "aws_s3_bucket_versioning" "terraform_state_bucket" {
+  bucket = aws_s3_bucket.terraform_state_bucket.id
 
   versioning_configuration {
     status = "Enabled"
   }
 }
 
-resource "aws_s3_bucket_lifecycle_configuration" "terraform_state" {
-  bucket = aws_s3_bucket.terraform_state.id
+resource "aws_s3_bucket_lifecycle_configuration" "terraform_state_bucket" {
+  bucket = aws_s3_bucket.terraform_state_bucket.id
 
   rule {
     id     = "expire_old_versions"
@@ -36,8 +36,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "terraform_state" {
 }
 
 #trivy:ignore:AVD-AWS-0132 (HIGH): Bucket does not encrypt data with a customer managed key.
-resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state" {
-  bucket = aws_s3_bucket.terraform_state.id
+resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state_bucket" {
+  bucket = aws_s3_bucket.terraform_state_bucket.id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -46,22 +46,22 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state" 
   }
 }
 
-resource "aws_s3_bucket_ownership_controls" "terraform_state" {
-  bucket = aws_s3_bucket.terraform_state.id
+resource "aws_s3_bucket_ownership_controls" "terraform_state_bucket" {
+  bucket = aws_s3_bucket.terraform_state_bucket.id
 
   rule {
     object_ownership = "BucketOwnerEnforced"
   }
 }
 
-data "aws_iam_policy_document" "terraform_state" {
+data "aws_iam_policy_document" "terraform_state_bucket" {
   statement {
     sid     = "EnforceTLS"
     actions = ["s3:*"]
     effect  = "Deny"
     resources = [
-      aws_s3_bucket.terraform_state.arn,
-      "${aws_s3_bucket.terraform_state.arn}/*",
+      aws_s3_bucket.terraform_state_bucket.arn,
+      "${aws_s3_bucket.terraform_state_bucket.arn}/*",
     ]
 
     condition {
@@ -80,7 +80,7 @@ data "aws_iam_policy_document" "terraform_state" {
     sid       = "DenyIncorrectEncryptionHeader"
     actions   = ["s3:PutObject"]
     effect    = "Deny"
-    resources = ["${aws_s3_bucket.terraform_state.arn}/*"]
+    resources = ["${aws_s3_bucket.terraform_state_bucket.arn}/*"]
 
     condition {
       test     = "StringNotEquals"
@@ -98,7 +98,7 @@ data "aws_iam_policy_document" "terraform_state" {
     sid       = "DenyAbsentEncryptionHeader"
     actions   = ["s3:PutObject"]
     effect    = "Deny"
-    resources = ["${aws_s3_bucket.terraform_state.arn}/*"]
+    resources = ["${aws_s3_bucket.terraform_state_bucket.arn}/*"]
 
     condition {
       test     = "Null"
@@ -117,8 +117,8 @@ data "aws_iam_policy_document" "terraform_state" {
     actions = ["s3:*"]
     effect  = "Allow"
     resources = [
-      aws_s3_bucket.terraform_state.arn,
-      "${aws_s3_bucket.terraform_state.arn}/*",
+      aws_s3_bucket.terraform_state_bucket.arn,
+      "${aws_s3_bucket.terraform_state_bucket.arn}/*",
     ]
 
     principals {
@@ -128,7 +128,7 @@ data "aws_iam_policy_document" "terraform_state" {
   }
 }
 
-resource "aws_s3_bucket_policy" "terraform_state" {
-  bucket = aws_s3_bucket.terraform_state.id
-  policy = data.aws_iam_policy_document.terraform_state.json
+resource "aws_s3_bucket_policy" "terraform_state_bucket" {
+  bucket = aws_s3_bucket.terraform_state_bucket.id
+  policy = data.aws_iam_policy_document.terraform_state_bucket.json
 }
