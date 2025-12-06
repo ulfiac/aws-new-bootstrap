@@ -110,6 +110,7 @@ jobs:
 
       - name: import bootstrap
         env:
+          AWS_REGION: ${{ inputs.aws_region }}
           OIDC_ROLE_TO_ASSUME: ${{ vars.OIDC_ROLE_TO_ASSUME }}
           TF_STATE_S3_BUCKET_NAME: ${{ vars.TF_STATE_S3_BUCKET_NAME }}
         run: ../scripts/import_bootstrap.sh
