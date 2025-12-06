@@ -2,6 +2,7 @@
 set -euo pipefail
 
 # Required environment variables:
+#   AWS_REGION              - AWS region to operate in
 #   OIDC_ROLE_TO_ASSUME     - Name of the IAM role to assume for OIDC authentication
 #   TF_STATE_S3_BUCKET_NAME - Name of the S3 bucket for Terraform state
 
@@ -14,6 +15,9 @@ OIDC_PROVIDER_HOSTNAME='token.actions.githubusercontent.com'
 
 # get the AWS account ID
 AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+
+# derive the Terraform state bucket name
+TERRAFORM_STATE_BUCKET_NAME="terraform-state-${AWS_ACCOUNT_ID}-${AWS_REGION}"
 
 
 # In Bash, an if statement evaluates the exit status of a command or a
@@ -68,7 +72,27 @@ function import_s3_bucket() {
 }
 
 
+# check if bucket exists before importing
+# if it does, import the resources
+# if it does not, skip the import
+function import_terraform_state_bucket() {
+  if aws s3api head-bucket --bucket "$TERRAFORM_STATE_BUCKET_NAME" > /dev/null 2>&1; then
+    echo -e "\n\nBucket '$TERRAFORM_STATE_BUCKET_NAME' exists. Importing...\n\n"
+    terraform import 'aws_s3_bucket.terraform_state_bucket' "$TERRAFORM_STATE_BUCKET_NAME"
+    terraform import 'aws_s3_bucket_public_access_block.terraform_state_bucket' "$TERRAFORM_STATE_BUCKET_NAME"
+    terraform import 'aws_s3_bucket_versioning.terraform_state_bucket' "$TERRAFORM_STATE_BUCKET_NAME"
+    terraform import 'aws_s3_bucket_lifecycle_configuration.terraform_state_bucket' "$TERRAFORM_STATE_BUCKET_NAME"
+    terraform import 'aws_s3_bucket_server_side_encryption_configuration.terraform_state_bucket' "$TERRAFORM_STATE_BUCKET_NAME"
+    terraform import 'aws_s3_bucket_ownership_controls.terraform_state_bucket' "$TERRAFORM_STATE_BUCKET_NAME"
+    terraform import 'aws_s3_bucket_policy.terraform_state_bucket' "$TERRAFORM_STATE_BUCKET_NAME"
+  else
+    echo -e "\n\nBucket '$TERRAFORM_STATE_BUCKET_NAME' does not exist.  No import needed.\n\n"
+  fi
+}
+
+
 # main execution
 import_oidc_provider
 import_iam_role
 import_s3_bucket
+import_terraform_state_bucket
