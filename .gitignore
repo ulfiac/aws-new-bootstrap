@@ -45,3 +45,6 @@ terraform.rc
 # gpg files
 *.gpg
 *.asc
+
+# ignore macOS system files because reasons
+.DS_Store
