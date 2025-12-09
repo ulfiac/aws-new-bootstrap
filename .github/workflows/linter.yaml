@@ -12,3 +12,4 @@ jobs:
     permissions:
       contents: read
     uses: ulfiac/github-action-reusables/.github/workflows/reusable_linter.yaml@main
+    secrets: inherit
