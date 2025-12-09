@@ -11,4 +11,5 @@ jobs:
   reusable-linter:
     permissions:
       contents: read
+      pull-requests: write
     uses: ulfiac/github-action-reusables/.github/workflows/reusable_linter.yaml@main
