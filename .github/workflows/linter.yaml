@@ -7,9 +7,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   reusable-linter:
     uses: ulfiac/github-action-reusables/.github/workflows/reusable_linter.yaml@main
-    permissions:
-      contents: read
-    secrets: inherit
