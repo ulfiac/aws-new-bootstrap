@@ -1,13 +1,31 @@
+module "tags" {
+  # tflint-ignore: terraform_module_pinned_source
+  source  = "git::https://github.com/ulfiac/terraform-infrastructure-modules.git//modules/tags?ref=main"
+  project = "aws-bootstrap"
+}
+
 provider "aws" {
-  region = var.aws_region
+  region = "us-east-2"
 
   default_tags {
     tags = module.tags.all_the_tags
   }
 }
 
-module "tags" {
-  # tflint-ignore: terraform_module_pinned_source
-  source  = "git::https://github.com/ulfiac/aws-tags.git"
-  project = "aws-bootstrap"
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+
+  default_tags {
+    tags = module.tags.all_the_tags
+  }
+}
+
+provider "aws" {
+  alias  = "ca_central_1"
+  region = "ca-central-1"
+
+  default_tags {
+    tags = module.tags.all_the_tags
+  }
 }
