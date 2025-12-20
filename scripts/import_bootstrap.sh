@@ -16,9 +16,6 @@ OIDC_PROVIDER_HOSTNAME='token.actions.githubusercontent.com'
 # get the AWS account ID
 AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
 
-# derive the Terraform state bucket name
-TERRAFORM_STATE_BUCKET_NAME="terraform-state-${AWS_ACCOUNT_ID}-${AWS_REGION}"
-
 
 # In Bash, an if statement evaluates the exit status of a command or a
 # conditional expression. An exit status of 0 indicates success (true),
@@ -75,24 +72,51 @@ function import_s3_bucket() {
 # check if bucket exists before importing
 # if it does, import the resources
 # if it does not, skip the import
-function import_terraform_state_bucket() {
-  if aws s3api head-bucket --bucket "$TERRAFORM_STATE_BUCKET_NAME" > /dev/null 2>&1; then
-    echo -e "\n\nBucket '$TERRAFORM_STATE_BUCKET_NAME' exists. Importing...\n\n"
-    terraform import 'aws_s3_bucket.terraform_state_bucket' "$TERRAFORM_STATE_BUCKET_NAME"
-    terraform import 'aws_s3_bucket_public_access_block.terraform_state_bucket' "$TERRAFORM_STATE_BUCKET_NAME"
-    terraform import 'aws_s3_bucket_versioning.terraform_state_bucket' "$TERRAFORM_STATE_BUCKET_NAME"
-    terraform import 'aws_s3_bucket_lifecycle_configuration.terraform_state_bucket' "$TERRAFORM_STATE_BUCKET_NAME"
-    terraform import 'aws_s3_bucket_server_side_encryption_configuration.terraform_state_bucket' "$TERRAFORM_STATE_BUCKET_NAME"
-    terraform import 'aws_s3_bucket_ownership_controls.terraform_state_bucket' "$TERRAFORM_STATE_BUCKET_NAME"
-    terraform import 'aws_s3_bucket_policy.terraform_state_bucket' "$TERRAFORM_STATE_BUCKET_NAME"
+function import_tf_state_bucket() {
+  local account_id="$1"
+  local region="$2"
+  local tf_state_bucket_name="terraform-state-${account_id}-${region}"
+  local region_underscore="${region//-/_}"
+
+  if aws s3api head-bucket --bucket "$tf_state_bucket_name" --region "$region" > /dev/null 2>&1; then
+    echo -e "\n\nBucket '$tf_state_bucket_name' exists. Importing...\n\n"
+    terraform import "module.tf_state_bucket_${region_underscore}.aws_s3_bucket.terraform_state_bucket" "$tf_state_bucket_name"
+    terraform import "module.tf_state_bucket_${region_underscore}.aws_s3_bucket_public_access_block.terraform_state_bucket" "$tf_state_bucket_name"
+    terraform import "module.tf_state_bucket_${region_underscore}.aws_s3_bucket_versioning.terraform_state_bucket" "$tf_state_bucket_name"
+    terraform import "module.tf_state_bucket_${region_underscore}.aws_s3_bucket_lifecycle_configuration.terraform_state_bucket" "$tf_state_bucket_name"
+    terraform import "module.tf_state_bucket_${region_underscore}.aws_s3_bucket_server_side_encryption_configuration.terraform_state_bucket" "$tf_state_bucket_name"
+    terraform import "module.tf_state_bucket_${region_underscore}.aws_s3_bucket_ownership_controls.terraform_state_bucket" "$tf_state_bucket_name"
+    terraform import "module.tf_state_bucket_${region_underscore}.aws_s3_bucket_policy.terraform_state_bucket" "$tf_state_bucket_name"
   else
-    echo -e "\n\nBucket '$TERRAFORM_STATE_BUCKET_NAME' does not exist.  No import needed.\n\n"
+    echo -e "\n\nBucket '$tf_state_bucket_name' does not exist.  No import needed.\n\n"
   fi
 }
 
 
-# main execution
+# main
+echo -e "\n\nStarting import of existing AWS resources into Terraform state...\n\n"
+
+echo "::group::import oidc provider:"
 import_oidc_provider
+echo "::endgroup::"
+
+echo "::group::import iam role:"
 import_iam_role
+echo "::endgroup::"
+
+# account layer tf state; will be removed eventually
+echo "::group::import bucket(original):"
 import_s3_bucket
-import_terraform_state_bucket
+echo "::endgroup::"
+
+echo "::group::import bucket(us-east-2):"
+import_tf_state_bucket "$AWS_ACCOUNT_ID" "us-east-2"
+echo "::endgroup::"
+
+echo "::group::import bucket(us-east-1):"
+import_tf_state_bucket "$AWS_ACCOUNT_ID" "us-east-1"
+echo "::endgroup::"
+
+echo "::group::import bucket(ca-central-1):"
+import_tf_state_bucket "$AWS_ACCOUNT_ID" "ca-central-1"
+echo "::endgroup::"
