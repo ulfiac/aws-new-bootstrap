@@ -1,7 +1,7 @@
 name: reusable tf action
 run-name: tf action - ${{ inputs.terraform_action }}
 
-on: 
+on:
   workflow_call:
     inputs:
       auth:
@@ -64,6 +64,7 @@ jobs:
     defaults:
       run:
         working-directory: ./terraform
+    environment: aws_mgmt
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - run: pwd
