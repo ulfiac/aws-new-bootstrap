@@ -1,6 +1,6 @@
 module "tags" {
   # tflint-ignore: terraform_module_pinned_source
-  source  = "git::https://github.com/ulfiac/terraform-infrastructure-modules.git//modules/tags?ref=main"
+  source  = "git::https://github.com/ulfiac/infra.git//terragrunt/_modules/tags?ref=main"
   project = "aws-bootstrap"
 }
 
