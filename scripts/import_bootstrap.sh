@@ -53,25 +53,6 @@ function import_iam_role() {
 # check if bucket exists before importing
 # if it does, import the resources
 # if it does not, skip the import
-function import_s3_bucket() {
-  if aws s3api head-bucket --bucket "$TF_STATE_S3_BUCKET_NAME" > /dev/null 2>&1; then
-    echo -e "\n\nBucket '$TF_STATE_S3_BUCKET_NAME' exists. Importing...\n\n"
-    terraform import 'aws_s3_bucket.terraform_state' "$TF_STATE_S3_BUCKET_NAME"
-    terraform import 'aws_s3_bucket_public_access_block.terraform_state' "$TF_STATE_S3_BUCKET_NAME"
-    terraform import 'aws_s3_bucket_versioning.terraform_state' "$TF_STATE_S3_BUCKET_NAME"
-    terraform import 'aws_s3_bucket_lifecycle_configuration.terraform_state' "$TF_STATE_S3_BUCKET_NAME"
-    terraform import 'aws_s3_bucket_server_side_encryption_configuration.terraform_state' "$TF_STATE_S3_BUCKET_NAME"
-    terraform import 'aws_s3_bucket_ownership_controls.terraform_state' "$TF_STATE_S3_BUCKET_NAME"
-    terraform import 'aws_s3_bucket_policy.terraform_state' "$TF_STATE_S3_BUCKET_NAME"
-  else
-    echo -e "\n\nBucket '$TF_STATE_S3_BUCKET_NAME' does not exist.  No import needed.\n\n"
-  fi
-}
-
-
-# check if bucket exists before importing
-# if it does, import the resources
-# if it does not, skip the import
 function import_tf_state_bucket() {
   local account_id="$1"
   local region="$2"
@@ -102,11 +83,6 @@ echo "::endgroup::"
 
 echo "::group::import iam role:"
 import_iam_role
-echo "::endgroup::"
-
-# account layer tf state; will be removed eventually
-echo "::group::import bucket(original):"
-import_s3_bucket
 echo "::endgroup::"
 
 echo "::group::import bucket(us-east-2):"
