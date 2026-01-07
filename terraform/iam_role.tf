@@ -14,7 +14,7 @@ data "aws_iam_policy_document" "assume_role_policy_oidc" {
       variable = "${local.oidc_provider_hostname}:sub"
       values = [
         "repo:ulfiac/aws-bootstrap:*",
-        "repo:ulfiac/aws-infrastructure:*"
+        "repo:ulfiac/infra:*"
       ]
     }
 
