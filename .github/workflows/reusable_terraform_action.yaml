@@ -12,6 +12,10 @@ on:
         default: us-east-2
         required: false
         type: string
+      context_details:
+        default: false
+        required: false
+        type: boolean
       terraform_action:
         required: true
         type: string
@@ -33,6 +37,10 @@ on:
         options:
           - us-east-2
           - us-west-2
+      context_details:
+        default: false
+        required: false
+        type: boolean
       terraform_action:
         default: plan
         description: terraform action
@@ -91,19 +99,9 @@ jobs:
           aws-region: ${{ inputs.aws_region }}
 
       - name: dump context
-        env:
-          CONTEXT_ENV: ${{ toJson(env) }}
-          CONTEXT_GITHUB: ${{ toJson(github) }}
-          CONTEXT_INPUTS: ${{ toJson(inputs) }}
-          CONTEXT_JOB: ${{ toJson(job) }}
-          CONTEXT_MATRIX: ${{ toJson(matrix) }}
-          CONTEXT_NEEDS: ${{ toJson(needs) }}
-          CONTEXT_RUNNER: ${{ toJson(runner) }}
-          CONTEXT_SECRETS: ${{ toJson(secrets) }}
-          CONTEXT_STEPS: ${{ toJson(steps) }}
-          CONTEXT_STRATEGY: ${{ toJson(strategy) }}
-          CONTEXT_VARS: ${{ toJson(vars) }}
-        run: ../scripts/dump_context.sh
+        uses: ulfiac/common-reusables/.github/actions/dump_context@main
+        with:
+          annotate: ${{ inputs.context_details }}
 
       - run: terraform init
       - run: terraform validate
